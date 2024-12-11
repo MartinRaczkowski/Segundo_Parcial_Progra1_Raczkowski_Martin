@@ -1,9 +1,6 @@
 import pygame as pg
-
 from .form_main_menu import FormMainMenu
 from .form_juego import FormJuego
-
-#from ..auxiliares import 
 
 class FormManager:
 
@@ -31,8 +28,3 @@ class FormManager:
     def update(self, event_list: list):
         self.forms_update(event_list)
 
-    
-
-    
-
-    

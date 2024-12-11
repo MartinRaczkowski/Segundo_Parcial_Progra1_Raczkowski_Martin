@@ -1,13 +1,13 @@
 from modulos.widgets.widget import Widget
 import pygame as pg
-from ..constantes import COLOR_ROJO
+from ..constantes import COLORES
 
 class Boton(Widget):
 
     def __init__(self, x, y, texto, pantalla, font_size = 25, on_click = None, on_click_param = None):
         super().__init__(x, y, texto, pantalla, font_size) 
         self.font = pg.font.Font('assets/fuentes/Halimount.otf', self.font_size)
-        self.image = self.font.render(self.texto, True, COLOR_ROJO)
+        self.image = self.font.render(self.texto, True, COLORES['COLOR_ROJO'])
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
 

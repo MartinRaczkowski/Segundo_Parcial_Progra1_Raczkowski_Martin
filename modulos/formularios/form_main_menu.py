@@ -8,8 +8,6 @@ class FormMainMenu(Form):
 
     def __init__(self, name, pantalla, x, y, active):
         super().__init__(name, pantalla, x, y, active)
-
-        #self.start_first_level = False
         
         self.surface = pg.image.load('assets/imagenes/fondo_colores.png').convert_alpha()
         self.surface = pg.transform.scale(self.surface, DIMENSION_PANTALLA)
@@ -24,9 +22,6 @@ class FormMainMenu(Form):
         self.boton_exit = Boton(x=DIMENSION_PANTALLA[0]//2, y=DIMENSION_PANTALLA[1]//2+400, texto='SALIR', pantalla=pantalla, on_click=self.click_exit, font_size=50)
 
         self.widget_list = [self.menu_prin_subtitle, self.menu_prin_title, self.boton_start, self.boton_exit]
-
-    #def click_start(self, parametro): 
-        #self.start_first_level = True
 
     def click_start(self, parametro='form_juego'):
         self.set_active('form_juego')

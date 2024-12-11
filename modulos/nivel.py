@@ -1,13 +1,9 @@
-from .auxiliares import (
-    cargar_configuraciones
-) # importar diccionario de los items
 import pygame as pg
 import random 
-from modulos.constantes import DIMENSION_PANTALLA
-from .widgets.text_title import TextTitle
-from .auxiliares import leonardo_item, donatello_item, splinter_item, miguelangelo_item, rafael_item, atriles
-COLOR_NEGRO = (0, 0, 0)
-from .widgets.boton import Boton
+from modulos.constantes import DIMENSION_PANTALLA, FPS, COORDENADAS_CIRCULO_ROJO, COORDENADAS_CIRCULO_AZUL
+from .auxiliares import (cargar_configuraciones, draw_personajes, draw_atriles, draw_lines, draw_botones, draw_resp_atril, draw_answers_rojo, draw_answers_azul)
+from .widgets.text_everything import TextEverything
+
 class Nivel:
 
     __instanciado = None
@@ -26,18 +22,16 @@ class Nivel:
         self.nivel_terminado = False
         self.cargar_configs()
         self.cant_preguntas = 0
+        self.mostrar_resp = 0
 
-        self.volver_menu_ppal = 0
+        self.level_timer = 15
+        self.reduccion_timer = 1
+        self.first_last_timer = pg.time.get_ticks()
+        self.clock = pg.time.Clock()
+        self.info_timer = TextEverything(x=675, y=850, texto=f'Tiempo Restante: {self.level_timer}', pantalla=self.pantalla, color='COLOR_NEGRO', font_size=25)
 
-        self.donatello_item = donatello_item
-        self.leonardo_item = leonardo_item
-        self.splinter_item = splinter_item
-        self.miguelangelo_item = miguelangelo_item
-        self.rafael_item = rafael_item
-
-        self.items_list = [self.donatello_item, self.leonardo_item, self.splinter_item, self.miguelangelo_item, self.rafael_item]
-
-        self.puntaje = 0
+        self.puntaje_pregunta = self.configs["valor"]
+        self.puntaje_total = 0
 
     @staticmethod
     def get_nivel(pantalla):
@@ -45,9 +39,14 @@ class Nivel:
             Nivel(pantalla)
         return Nivel.__instanciado
     
-    @staticmethod
-    def esta_instanciado():
-        return Nivel.__instanciado != None
+    def actualizar_timer(self):
+        if self.level_timer > 0:
+            tiempo_actual = pg.time.get_ticks()
+            if tiempo_actual - self.first_last_timer > 1000:
+                self.level_timer = self.level_timer - self.reduccion_timer
+                self.first_last_timer = tiempo_actual
+        else: 
+            self.nivel_perdido()
 
     def cargar_configs(self):
         configs_globales = cargar_configuraciones()
@@ -55,83 +54,76 @@ class Nivel:
         self.cant_preguntas = len(configs_globales) 
 
     def draw_preguntas_respuestas(self):
-
         pregunta = self.configs["pregunta"]
-        pregunta_pantalla = TextTitle(x=DIMENSION_PANTALLA[0]//2, y=DIMENSION_PANTALLA[1]//2, texto=pregunta, pantalla=self.pantalla, color="COLOR_NEGRO", font_size=100)
+        pregunta_pantalla = TextEverything(x=DIMENSION_PANTALLA[0]//2, y=DIMENSION_PANTALLA[1]//2+100, texto=pregunta, pantalla=self.pantalla, color="COLOR_NEGRO", font_size=100)
         pregunta_pantalla.draw()
-
         
         if self.orden_respuestas == 0:
             respuesta_rojo = self.configs["resp_correcta"]
-            respuesta_pantalla_rojo = TextTitle(x=475, y=750, texto=respuesta_rojo, pantalla=self.pantalla, color="COLOR_NEGRO", font_size=100)
-            respuesta_pantalla_rojo.draw()
+            draw_answers_rojo(respuesta=respuesta_rojo)
             self.resp_correcta = 0
             respuesta_azul = self.configs["resp_incorrecta"]
-            respuesta_pantalla_azul = TextTitle(x=875, y=750, texto=respuesta_azul, pantalla=self.pantalla, color="COLOR_NEGRO", font_size=100)
-            respuesta_pantalla_azul.draw()
-
+            draw_answers_azul(respuesta=respuesta_azul)
         else:
             respuesta_rojo = self.configs["resp_incorrecta"]
-            respuesta_pantalla_rojo = TextTitle(x=475, y=750, texto=respuesta_rojo, pantalla=self.pantalla, color="COLOR_NEGRO", font_size=100)
-            respuesta_pantalla_rojo.draw()
+            draw_answers_rojo(respuesta=respuesta_rojo)
             respuesta_azul = self.configs["resp_correcta"]
-            respuesta_pantalla_azul = TextTitle(x=875, y=750, texto=respuesta_azul, pantalla=self.pantalla, color="COLOR_NEGRO", font_size=100)
-            respuesta_pantalla_azul.draw()
+            draw_answers_azul(respuesta=respuesta_azul)
             self.resp_correcta = 1
 
     def orden_al_azar(self):
         self.orden_respuestas = random.randint(0,1)
 
     def responde_correctamente(self):
+        self.puntaje_total += self.puntaje_pregunta
         self.nro_pregunta = self.nro_pregunta + 1
         self.orden_respuestas = random.randint(0,1)
+        self.level_timer = 15
 
     def events(self, event_list: list):
         for event in event_list:
             if event.type == pg.MOUSEBUTTONDOWN:
-                print(event.pos)
-                if (415) < event.pos[0] < (535):
-                    if (790) < event.pos[1] < (910):
-                        print('rojo')
+                if (COORDENADAS_CIRCULO_ROJO[0]-60) < event.pos[0] < (COORDENADAS_CIRCULO_ROJO[0]+60):
+                    if (COORDENADAS_CIRCULO_ROJO[1]-60) < event.pos[1] < (COORDENADAS_CIRCULO_ROJO[1]+60):
+                        self.respuestas_atriles()
                         if self.resp_correcta == 0:
                             self.responde_correctamente()
                         else:
                             self.respondio_incorrectamente += 1
-
-                elif (815) < event.pos[0] < (935):
-                    if (790) < event.pos[1] < (910):
-                        print('azul')
+                elif (COORDENADAS_CIRCULO_AZUL[0]-60) < event.pos[0] < (COORDENADAS_CIRCULO_AZUL[0]+60):
+                    if (COORDENADAS_CIRCULO_AZUL[1]-60) < event.pos[1] < (COORDENADAS_CIRCULO_AZUL[1]+60):
+                        self.respuestas_atriles()
                         if self.resp_correcta == 1:
                             self.responde_correctamente()
                         else:
                             self.respondio_incorrectamente += 1
 
+    def respuestas_atriles(self):
+        self.reduccion_timer = 0
+        self.mostrar_resp = 1
+        self.draw_respuestas_atriles()
+
+    def draw_marcador_puntaje(self):
+        marcador_puntaje = TextEverything(x=120, y=950, texto=f'Puntaje: {self.puntaje_total}', pantalla=self.pantalla, color="COLOR_NEGRO", font_size=50)
+        marcador_puntaje.draw()
+
+    def draw_respuestas_atriles(self):
+        respuesta_correcta=self.resp_correcta
+        draw_resp_atril(0, respuesta_correcta)
+        draw_resp_atril(1, respuesta_correcta)
+        draw_resp_atril(2, respuesta_correcta)
+        draw_resp_atril(3, respuesta_correcta)
+        draw_resp_atril(4, respuesta_correcta)
 
     def nivel_ganado(self):
         self.draw_nivel()
-        festejo_pantalla = TextTitle(x=DIMENSION_PANTALLA[0]//2, y=DIMENSION_PANTALLA[1]//2, texto='GANASTE!', pantalla=self.pantalla, color="COLOR_NEGRO", font_size=100)
+        festejo_pantalla = TextEverything(x=DIMENSION_PANTALLA[0]//2, y=DIMENSION_PANTALLA[1]//2, texto='GANASTE!', pantalla=self.pantalla, color="COLOR_NEGRO", font_size=100)
         festejo_pantalla.draw()
 
     def nivel_perdido(self):
-        # que el juego termine cuando el jugador se equivoca o se queda sin tiempo 
         self.draw_nivel()
-        mensaje_pantalla = TextTitle(x=DIMENSION_PANTALLA[0]//2, y=DIMENSION_PANTALLA[1]//2, texto='PERDISTE :(', pantalla=self.pantalla, color="COLOR_NEGRO", font_size=100)
+        mensaje_pantalla = TextEverything(x=DIMENSION_PANTALLA[0]//2, y=DIMENSION_PANTALLA[1]//2, texto='PERDISTE :(', pantalla=self.pantalla, color="COLOR_NEGRO", font_size=100)
         mensaje_pantalla.draw()
-
-
-    def draw_botones(self, pantalla):
-        COORDENADAS_CIRCULO_ROJO = [475, 850]
-        COORDENADAS_CIRCULO_AZUL = [875, 850]
-        COLOR_ROJO = (200, 0, 0)
-        COLOR_NEGRO = (0, 0, 0)
-        COLOR_BLANCO = (255, 255, 255)
-        COLOR_AZUL = (0, 0, 128)
-
-        pg.draw.circle(pantalla, COLOR_NEGRO, COORDENADAS_CIRCULO_ROJO, 65)
-        pg.draw.circle(pantalla, COLOR_NEGRO, COORDENADAS_CIRCULO_AZUL, 65)
-
-        pg.draw.circle(pantalla, COLOR_ROJO, COORDENADAS_CIRCULO_ROJO, 60)
-        pg.draw.circle(pantalla, COLOR_AZUL, COORDENADAS_CIRCULO_AZUL, 60)
 
     def draw_nivel(self):
         surface = pg.image.load('assets/imagenes/fondo_colores.png').convert_alpha()
@@ -140,21 +132,11 @@ class Nivel:
         self.pantalla.blit(surface, slave_rect)
 
     def draw_items(self):
-        pg.draw.line(self.pantalla, COLOR_NEGRO, [0, 800], [200, 200], 5)
-        pg.draw.line(self.pantalla, COLOR_NEGRO, [200, 200], [1200, 200], 5)
-        pg.draw.line(self.pantalla, COLOR_NEGRO, [1200, 200], [1400, 800], 5)
-        pg.draw.line(self.pantalla, COLOR_NEGRO, [200, 200], [200, 0], 5)
-        pg.draw.line(self.pantalla, COLOR_NEGRO, [1200, 200], [1200, 0], 5)
-        for item in self.items_list:
-            item.draw()
-        for atril in atriles:
-            atril.draw()
+        draw_lines()
+        draw_personajes()
+        draw_atriles()
+        self.info_timer.draw()
 
-    def draw(self):
-        self.draw_nivel()
-        self.draw_items()
-        self.draw_botones()
-    
     def update(self, event_list: list):
         if self.respondio_incorrectamente > 0:
             self.nivel_perdido()
@@ -162,11 +144,11 @@ class Nivel:
             self.draw_nivel()
             self.draw_items()
             self.draw_preguntas_respuestas()
-            self.draw_botones(self.pantalla)
+            draw_botones()
         else:
             self.nivel_ganado()
+        self.info_timer = TextEverything(x=675, y=850, texto=f'Tiempo Restante: {self.level_timer}', pantalla=self.pantalla, color='COLOR_NEGRO', font_size=25)
         self.events(event_list=event_list)
-        
-        
-
+        self.actualizar_timer()
+        self.clock.tick(FPS)
 

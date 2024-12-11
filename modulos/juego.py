@@ -1,8 +1,6 @@
 import sys
 import pygame as pg
-
 from modulos.formularios import FormManager
-
 from modulos.constantes import DIMENSION_PANTALLA
 
 def correr_juego():
